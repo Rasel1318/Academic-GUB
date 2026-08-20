@@ -9,8 +9,6 @@
 #define TITLE_LEN 100
 #define NAME_LEN 100
 #define PHONE_LEN 30
-#define DATE_LEN 11
-#define FINE_PER_DAY 5.0
 
 #define BOOK_FILE "books.txt"
 #define MEMBER_FILE "members.txt"
@@ -33,11 +31,7 @@ typedef struct {
     int issueId;
     int bookId;
     int memberId;
-    char issueDate[DATE_LEN];
-    char dueDate[DATE_LEN];
-    char returnDate[DATE_LEN];
-    int returned;
-    double fine;
+    int status; /* 0 = Issued, 1 = Returned */
 } IssueRecord;
 
 static Book books[MAX_BOOKS];
@@ -101,54 +95,7 @@ static double readDouble(const char *prompt) {
     }
 }
 
-static void currentDate(char *buffer, size_t size) {
-    time_t now = time(NULL);
-    struct tm *local = localtime(&now);
-    strftime(buffer, size, "%Y-%m-%d", local);
-}
-
-static int parseDate(const char *text, struct tm *result) {
-    int year, month, day;
-    if (sscanf(text, "%d-%d-%d", &year, &month, &day) != 3) {
-        return 0;
-    }
-    memset(result, 0, sizeof(*result));
-    result->tm_year = year - 1900;
-    result->tm_mon = month - 1;
-    result->tm_mday = day;
-    result->tm_hour = 12;
-    return 1;
-}
-
-static void addDays(const char *dateText, int days, char *output, size_t size) {
-    struct tm date;
-    time_t rawDate;
-    if (!parseDate(dateText, &date)) {
-        snprintf(output, size, "%s", dateText);
-        return;
-    }
-    rawDate = mktime(&date);
-    rawDate += (time_t)days * 24 * 60 * 60;
-    date = *localtime(&rawDate);
-    strftime(output, size, "%Y-%m-%d", &date);
-}
-
-static int daysBetween(const char *startText, const char *endText) {
-    struct tm startTm;
-    struct tm endTm;
-    time_t startTime;
-    time_t endTime;
-    double seconds;
-
-    if (!parseDate(startText, &startTm) || !parseDate(endText, &endTm)) {
-        return 0;
-    }
-
-    startTime = mktime(&startTm);
-    endTime = mktime(&endTm);
-    seconds = difftime(endTime, startTime);
-    return (int)(seconds / (24 * 60 * 60));
-}
+    
 
 static int findBookIndex(int id) {
     for (int i = 0; i < bookCount; i++) {
@@ -170,7 +117,7 @@ static int findMemberIndex(int id) {
 
 static int findIssueIndexByBook(int bookId) {
     for (int i = 0; i < issueCount; i++) {
-        if (issues[i].bookId == bookId && !issues[i].returned) {
+        if (issues[i].bookId == bookId && issues[i].status == 0) {
             return i;
         }
     }
@@ -258,15 +205,11 @@ static int readIssuesFromText(FILE *file) {
         if (!fgets(line, sizeof(line), file)) {
             return 0;
         }
-        if (sscanf(line, "%d|%d|%d|%10[^|]|%10[^|]|%10[^|]|%d|%lf",
+        if (sscanf(line, "%d|%d|%d|%d",
                    &issues[i].issueId,
                    &issues[i].bookId,
                    &issues[i].memberId,
-                   issues[i].issueDate,
-                   issues[i].dueDate,
-                   issues[i].returnDate,
-                   &issues[i].returned,
-                   &issues[i].fine) != 8) {
+                   &issues[i].status) != 4) {
             return 0;
         }
     }
@@ -348,10 +291,38 @@ static int saveMembers(void) {
         fprintf(file, "%d|%s|%s\n",
                 members[i].id,
                 members[i].name,
-            members[i].phone);
+                members[i].phone);
     }
     fclose(file);
     return 1;
+}
+
+static void showReports(void) {
+    int availableBooks = 0;
+    int issuedBooks = 0;
+    int activeIssues = 0;
+
+    for (int i = 0; i < bookCount; i++) {
+        if (books[i].available) {
+            availableBooks++;
+        } else {
+            issuedBooks++;
+        }
+    }
+
+    for (int i = 0; i < issueCount; i++) {
+        if (issues[i].status == 0) {
+            activeIssues++;
+        }
+    }
+
+    printf("\nLibrary Report\n");
+    printf("Total Books     : %d\n", bookCount);
+    printf("Available Books : %d\n", availableBooks);
+    printf("Issued Books    : %d\n", issuedBooks);
+    printf("Total Members   : %d\n", memberCount);
+    printf("Active Issues   : %d\n", activeIssues);
+    printf("Overdue Issues  : %d\n", 0);
 }
 
 static int saveIssues(void) {
@@ -361,15 +332,11 @@ static int saveIssues(void) {
     }
     fprintf(file, "%d\n", issueCount);
     for (int i = 0; i < issueCount; i++) {
-        fprintf(file, "%d|%d|%d|%s|%s|%s|%d|%.2f\n",
+        fprintf(file, "%d|%d|%d|%d\n",
                 issues[i].issueId,
                 issues[i].bookId,
                 issues[i].memberId,
-                issues[i].issueDate,
-                issues[i].dueDate,
-                issues[i].returnDate[0] ? issues[i].returnDate : "-",
-                issues[i].returned,
-                issues[i].fine);
+                issues[i].status);
     }
     fclose(file);
     return 1;
@@ -550,7 +517,7 @@ static void deleteMember(void) {
     }
 
     for (int i = 0; i < issueCount; i++) {
-        if (issues[i].memberId == id && !issues[i].returned) {
+        if (issues[i].memberId == id && issues[i].status == 0) {
             printf("Cannot delete member with active issued books.\n");
             return;
         }
@@ -591,42 +558,25 @@ static void issueBook(void) {
     issue.issueId = nextIssueId();
     issue.bookId = bookId;
     issue.memberId = memberId;
-    currentDate(issue.issueDate, sizeof(issue.issueDate));
-    addDays(issue.issueDate, 14, issue.dueDate, sizeof(issue.dueDate));
-    issue.returned = 0;
-    issue.returnDate[0] = '\0';
-    issue.fine = 0.0;
+    issue.status = 0; /* Issued */
 
     books[bookIndex].available = 0;
     issues[issueCount++] = issue;
     saveAll();
 
     printf("Book issued successfully.\n");
-    printf("Issue Date: %s\n", issue.issueDate);
-    printf("Due Date  : %s\n", issue.dueDate);
+    printf("Status     : Issued\n");
 }
 
 static void returnBook(void) {
     int bookId = readInt("Enter Book ID to return: ");
     int issueIndex = findIssueIndexByBook(bookId);
-    char today[DATE_LEN];
-    int overdueDays;
 
     if (issueIndex == -1) {
         printf("No active issue found for this book.\n");
         return;
     }
-
-    currentDate(today, sizeof(today));
-    overdueDays = daysBetween(issues[issueIndex].dueDate, today);
-    if (overdueDays > 0) {
-        issues[issueIndex].fine = overdueDays * FINE_PER_DAY;
-    } else {
-        issues[issueIndex].fine = 0.0;
-    }
-
-    issues[issueIndex].returned = 1;
-    snprintf(issues[issueIndex].returnDate, sizeof(issues[issueIndex].returnDate), "%s", today);
+    issues[issueIndex].status = 1; /* Returned */
     {
         int bookIndex = findBookIndex(bookId);
         if (bookIndex != -1) {
@@ -636,62 +586,22 @@ static void returnBook(void) {
 
     saveAll();
     printf("Book returned successfully.\n");
-    printf("Return Date : %s\n", issues[issueIndex].returnDate);
-    printf("Fine        : %.2f\n", issues[issueIndex].fine);
+    printf("Status     : Returned\n");
 }
 
 static void listIssues(void) {
-    printf("\n%-8s %-8s %-8s %-12s %-12s %-12s %-8s\n",
-           "IssueID", "BookID", "MemberID", "IssueDate", "DueDate", "ReturnDate", "Fine");
-    printf("--------------------------------------------------------------------------------------\n");
+    printf("\n%-8s %-8s %-8s %-10s\n", "IssueID", "BookID", "MemberID", "Status");
+    printf("------------------------------------------------\n");
     for (int i = 0; i < issueCount; i++) {
-        printf("%-8d %-8d %-8d %-12s %-12s %-12s %-8.2f\n",
+        printf("%-8d %-8d %-8d %-10s\n",
                issues[i].issueId,
                issues[i].bookId,
                issues[i].memberId,
-               issues[i].issueDate,
-               issues[i].dueDate,
-               issues[i].returned ? issues[i].returnDate : "-",
-               issues[i].fine);
+               issues[i].status == 0 ? "Issued" : "Returned");
     }
     if (issueCount == 0) {
         printf("No issue records found.\n");
     }
-}
-
-static void showReports(void) {
-    int availableBooks = 0;
-    int issuedBooks = 0;
-    int activeIssues = 0;
-    int overdueIssues = 0;
-    char today[DATE_LEN];
-
-    currentDate(today, sizeof(today));
-
-    for (int i = 0; i < bookCount; i++) {
-        if (books[i].available) {
-            availableBooks++;
-        } else {
-            issuedBooks++;
-        }
-    }
-
-    for (int i = 0; i < issueCount; i++) {
-        if (!issues[i].returned) {
-            activeIssues++;
-            if (daysBetween(issues[i].dueDate, today) > 0) {
-                overdueIssues++;
-            }
-        }
-    }
-
-    printf("\nLibrary Report\n");
-    printf("Total Books     : %d\n", bookCount);
-    printf("Available Books : %d\n", availableBooks);
-    printf("Issued Books    : %d\n", issuedBooks);
-    printf("Total Members   : %d\n", memberCount);
-    printf("Active Issues   : %d\n", activeIssues);
-    printf("Overdue Issues  : %d\n", overdueIssues);
 }
 
 static void manageBooksMenu(void) {

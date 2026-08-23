@@ -1,0 +1,9 @@
+8
+1001|The Great Gatsby|F. Scott Fitzgerald|1925|1
+1002|Introduction to Algorithms|Thomas H. Cormen|2009|0
+1003|Clean Code|Robert C. Martin|2008|1
+1004|The C Programming Language|Brian W. Kernighan|1988|1
+1005|Atomic Habits|James Clear|2018|0
+1006|The Pragmatic Programmer|Andrew Hunt|1999|1
+1007|A Brief History of Time|Stephen Hawking|1988|1
+1008|Pride and Prejudice|Jane Austen|1813|1

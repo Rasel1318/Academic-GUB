@@ -1,711 +1,85 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <bits/stdc++.h>
 
-#define MAX_BOOKS 200
-#define MAX_MEMBERS 200
-#define MAX_ISSUES 300
-#define TITLE_LEN 100
-#define NAME_LEN 100
-#define PHONE_LEN 30
+using namespace std;
+using ll = long long int;
+using lld = long double;
+using pii = pair<int,int>;
+using vi = vector<int>;
+using vl = vector<ll>;
+using vii = vector<pii>;
 
-#define BOOK_FILE "books.txt"
-#define MEMBER_FILE "members.txt"
-#define ISSUE_FILE "issues.txt"
-typedef struct {
-    int id;
-    char title[TITLE_LEN];
-    char author[NAME_LEN];
-    int year;
-    int available;
-} Book;
+#define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)
+#define mod 1000000007
+#define INF 1e18
+#define endl "\n"
+#define pb push_back
+#define ppb pop_back
+#define mp make_pair
+#define rep(i, j, n) for(int i=(j);i<(n);++i)
+#define ff first
+#define ss second
+#define PI 3.141592653589793238462
+#define set_bits __builtin_popcountll
+#define all(x) (x).begin(), (x).end()
+#define sz(x) ((int)(x).size())
+#define no cout<<"NO\n"
+#define yes cout<<"YES\n"
 
-typedef struct {
-    int id;
-    char name[NAME_LEN];
-    char phone[PHONE_LEN];
-} Member;
 
-typedef struct {
-    int issueId;
-    int bookId;
-    int memberId;
-    int status; // 0 = Issued, 1 = Returned 
-} IssueRecord;
+/*---------------------------------------------------------------------------------------------------------------------------*/
+ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
+ll expo(ll a, ll b, ll m=mod) {ll res = 1; while(b > 0) {if(b&1) res = (res*a)%m; a = (a*a)%m; b = b>>1;} return res;}
+ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
+ll mod_add(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a + b) % m) + m) % m;}
+ll mod_mul(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a * b) % m) + m) % m;}
+ll mod_sub(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}
+ll mod_div(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m
+/*---------------------------------------------------------------------------------------------------------------------------*/
 
-static Book books[MAX_BOOKS];
-static Member members[MAX_MEMBERS];
-static IssueRecord issues[MAX_ISSUES];
-static int bookCount = 0;
-static int memberCount = 0;
-static int issueCount = 0;
+void solve(){
+    ll n;
+    cin>>n;
 
-static void trimNewline(char *text) {
-    size_t length = strlen(text);
-    if (length > 0 && text[length - 1] == '\n') {
-        text[length - 1] = '\0';
+    vl a(n);
+    for(auto &i:a) cin>>i;
+
+    vl pre(n+1, 0), suf(n+1, 0);
+    pre[1] = 1; suf[n-1] = 1;
+
+    for(int i = 1; i<n-1; i++){
+        ll x = 0;
+        if(a[i+1]-a[i]<a[i]-a[i-1]) x = 1;
+        else x = a[i+1]-a[i];
+
+        pre[i+1] = pre[i]+x;
     }
-}
 
-static void clearInputBuffer(void) {
-    int ch;
-    while ((ch = getchar()) != '\n' && ch != EOF) {
-    }
-}
+    for(auto i:pre) cout<<i<<" "; cout<<endl;
 
-static void readLine(const char *prompt, char *buffer, size_t size) {
-    printf("%s", prompt);
-    if (fgets(buffer, (int)size, stdin) == NULL) {
-        buffer[0] = '\0';
-        return;
-    }
-    trimNewline(buffer);
-}
-
-static int readInt(const char *prompt) {
-    char buffer[64];
-    int value;
-
-    for (;;) {
-        printf("%s", prompt);
-        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-            return 0;
+    int q;
+    cin>>q;
+    while(q--){
+        int x, y;
+        cin>>x>>y;
+        if(x<y){
+            cout<<pre[y-1]-pre[x-1]<<endl;
+        }else {
+            cout<<-1<<endl;
         }
-        if (sscanf(buffer, "%d", &value) == 1) {
-            return value;
-        }
-        printf("Invalid input. Try again.\n");
+
     }
-}
+}   
 
-static double readDouble(const char *prompt) {
-    char buffer[64];
-    double value;
-
-    for (;;) {
-        printf("%s", prompt);
-        if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-            return 0.0;
-        }
-        if (sscanf(buffer, "%lf", &value) == 1) {
-            return value;
-        }
-        printf("Invalid input. Try again.\n");
-    }
-}
-
+int32_t main(){
+    fastio();
+    // freopen("txt.in", "r", stdin);
+    // freopen("txt.out", "w", stdout);
+    // cout<<fixed<<std::setprecision(10);
     
-
-static int findBookIndex(int id) {
-    for (int i = 0; i < bookCount; i++) {
-        if (books[i].id == id) {
-            return i;
-        }
+    int _ = 1;
+    cin >> _;
+    while(_--){
+        solve();
     }
-    return -1;
-}
-
-static int findMemberIndex(int id) {
-    for (int i = 0; i < memberCount; i++) {
-        if (members[i].id == id) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static int findIssueIndexByBook(int bookId) {
-    for (int i = 0; i < issueCount; i++) {
-        if (issues[i].bookId == bookId && issues[i].status == 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static int nextIssueId(void) {
-    int maxId = 0;
-    for (int i = 0; i < issueCount; i++) {
-        if (issues[i].issueId > maxId) {
-            maxId = issues[i].issueId;
-        }
-    }
-    return maxId + 1;
-}
-
-static int loadBooks(void) {
-    FILE *file = fopen(BOOK_FILE, "r");
-    char line[512];
-    int count = 0;
-
-    if (!file) {
-        bookCount = 0;
-        return 0;
-    }
-    if (!fgets(line, sizeof(line), file)) {
-        bookCount = 0;
-        fclose(file);
-        return 0;
-    }
-    if (sscanf(line, "%d", &count) != 1 || count < 0 || count > MAX_BOOKS) {
-        bookCount = 0;
-        fclose(file);
-        return 0;
-    }
-    for (int i = 0; i < count; i++) {
-        if (!fgets(line, sizeof(line), file)) {
-            bookCount = 0;
-            fclose(file);
-            return 0;
-        }
-        if (sscanf(line, "%d|%99[^|]|%99[^|]|%d|%d",
-                   &books[i].id,
-                   books[i].title,
-                   books[i].author,
-                   &books[i].year,
-                   &books[i].available) != 5) {
-            bookCount = 0;
-            fclose(file);
-            return 0;
-        }
-    }
-    bookCount = count;
-    fclose(file);
-    return 1;
-}
-
-static int loadMembers(void) {
-    FILE *file = fopen(MEMBER_FILE, "r");
-    char line[512];
-    int count = 0;
-
-    if (!file) {
-        memberCount = 0;
-        return 0;
-    }
-    if (!fgets(line, sizeof(line), file)) {
-        memberCount = 0;
-        fclose(file);
-        return 0;
-    }
-    if (sscanf(line, "%d", &count) != 1 || count < 0 || count > MAX_MEMBERS) {
-        memberCount = 0;
-        fclose(file);
-        return 0;
-    }
-    for (int i = 0; i < count; i++) {
-        do {
-            if (!fgets(line, sizeof(line), file)) {
-                memberCount = 0;
-                fclose(file);
-                return 0;
-            }
-            trimNewline(line);
-        } while (line[0] == '\0');
-        if (sscanf(line, "%d|%99[^|]|%29[^|]",
-                   &members[i].id,
-                   members[i].name,
-                   members[i].phone) != 3) {
-            memberCount = 0;
-            fclose(file);
-            return 0;
-        }
-    }
-    memberCount = count;
-    fclose(file);
-    return 1;
-}
-
-static int loadIssues(void) {
-    FILE *file = fopen(ISSUE_FILE, "r");
-    char line[512];
-    int count = 0;
-
-    if (!file) {
-        issueCount = 0;
-        return 0;
-    }
-    if (!fgets(line, sizeof(line), file)) {
-        issueCount = 0;
-        fclose(file);
-        return 0;
-    }
-    if (sscanf(line, "%d", &count) != 1 || count < 0 || count > MAX_ISSUES) {
-        issueCount = 0;
-        fclose(file);
-        return 0;
-    }
-    for (int i = 0; i < count; i++) {
-        if (!fgets(line, sizeof(line), file)) {
-            issueCount = 0;
-            fclose(file);
-            return 0;
-        }
-        if (sscanf(line, "%d|%d|%d|%d",
-                   &issues[i].issueId,
-                   &issues[i].bookId,
-                   &issues[i].memberId,
-                   &issues[i].status) != 4) {
-            issueCount = 0;
-            fclose(file);
-            return 0;
-        }
-    }
-    issueCount = count;
-    fclose(file);
-    return 1;
-}
-
-static int saveBooks(void) {
-    FILE *file = fopen(BOOK_FILE, "w");
-    if (!file) {
-        return 0;
-    }
-    fprintf(file, "%d\n", bookCount);
-    for (int i = 0; i < bookCount; i++) {
-        fprintf(file, "%d|%s|%s|%d|%d\n",
-                books[i].id,
-                books[i].title,
-                books[i].author,
-                books[i].year,
-                books[i].available);
-    }
-    fclose(file);
-    return 1;
-}
-
-static int saveMembers(void) {
-    FILE *file = fopen(MEMBER_FILE, "w");
-    if (!file) {
-        return 0;
-    }
-    fprintf(file, "%d\n", memberCount);
-    for (int i = 0; i < memberCount; i++) {
-        fprintf(file, "%d|%s|%s\n",
-                members[i].id,
-                members[i].name,
-                members[i].phone);
-    }
-    fclose(file);
-    return 1;
-}
-
-static void showReports(void) {
-    int availableBooks = 0;
-    int issuedBooks = 0;
-
-    for (int i = 0; i < bookCount; i++) {
-        if (books[i].available) {
-            availableBooks++;
-        } else {
-            issuedBooks++;
-        }
-    }
-
-    printf("\nLibrary Report\n");
-    printf("Total Books     : %d\n", bookCount);
-    printf("Available Books : %d\n", availableBooks);
-    printf("Issued Books    : %d\n", issuedBooks);
-    printf("Total Members   : %d\n", memberCount);
-}
-
-static int saveIssues(void) {
-    FILE *file = fopen(ISSUE_FILE, "w");
-    if (!file) {
-        return 0;
-    }
-    fprintf(file, "%d\n", issueCount);
-    for (int i = 0; i < issueCount; i++) {
-        fprintf(file, "%d|%d|%d|%d\n",
-                issues[i].issueId,
-                issues[i].bookId,
-                issues[i].memberId,
-                issues[i].status);
-    }
-    fclose(file);
-    return 1;
-}
-
-static void saveAll(void) {
-    saveBooks();
-    saveMembers();
-    saveIssues();
-}
-
-static void addBook(void) {
-    Book book;
-
-    if (bookCount >= MAX_BOOKS) {
-        printf("Book storage is full.\n");
-        return;
-    }
-
-    book.id = readInt("Book ID: ");
-    if (findBookIndex(book.id) != -1) {
-        printf("A book with this ID already exists.\n");
-        return;
-    }
-
-    readLine("Title: ", book.title, sizeof(book.title));
-    readLine("Author: ", book.author, sizeof(book.author));
-    book.year = readInt("Publication Year: ");
-    book.available = 1;
-
-    books[bookCount++] = book;
-    saveBooks();
-    printf("Book added successfully.\n");
-}
-
-static void listBooks(void) {
-    printf("\n%-8s %-30s %-24s %-8s %-10s\n", "ID", "Title", "Author", "Year", "Status");
-    printf("-------------------------------------------------------------------------------\n");
-    for (int i = 0; i < bookCount; i++) {
-        printf("%-8d %-30.30s %-24.24s %-8d %-10s\n",
-               books[i].id,
-               books[i].title,
-               books[i].author,
-               books[i].year,
-               books[i].available ? "Available" : "Issued");
-    }
-    if (bookCount == 0) {
-        printf("No books found.\n");
-    }
-}
-
-static void searchBook(void) {
-    int id = readInt("Enter Book ID to search: ");
-    int index = findBookIndex(id);
-
-    if (index == -1) {
-        printf("Book not found.\n");
-        return;
-    }
-
-    printf("Book ID   : %d\n", books[index].id);
-    printf("Title     : %s\n", books[index].title);
-    printf("Author    : %s\n", books[index].author);
-    printf("Year      : %d\n", books[index].year);
-    printf("Status    : %s\n", books[index].available ? "Available" : "Issued");
-}
-
-static void updateBook(void) {
-    int id = readInt("Enter Book ID to update: ");
-    int index = findBookIndex(id);
-
-    if (index == -1) {
-        printf("Book not found.\n");
-        return;
-    }
-
-    readLine("New Title: ", books[index].title, sizeof(books[index].title));
-    readLine("New Author: ", books[index].author, sizeof(books[index].author));
-    books[index].year = readInt("New Publication Year: ");
-    saveBooks();
-    printf("Book updated successfully.\n");
-}
-
-static void deleteBook(void) {
-    int id = readInt("Enter Book ID to delete: ");
-    int index = findBookIndex(id);
-
-    if (index == -1) {
-        printf("Book not found.\n");
-        return;
-    }
-    if (!books[index].available) {
-        printf("Cannot delete an issued book. Return it first.\n");
-        return;
-    }
-    for (int i = index; i < bookCount - 1; i++) {
-        books[i] = books[i + 1];
-    }
-    bookCount--;
-    saveBooks();
-    printf("Book deleted successfully.\n");
-}
-
-static void addMember(void) {
-    Member member;
-
-    if (memberCount >= MAX_MEMBERS) {
-        printf("Member storage is full.\n");
-        return;
-    }
-
-    member.id = readInt("Member ID: ");
-    if (findMemberIndex(member.id) != -1) {
-        printf("A member with this ID already exists.\n");
-        return;
-    }
-
-    readLine("Member Name: ", member.name, sizeof(member.name));
-    readLine("Phone Number: ", member.phone, sizeof(member.phone));
-
-    members[memberCount++] = member;
-    saveMembers();
-    printf("Member added successfully.\n");
-}
-
-static void listMembers(void) {
-    printf("\n%-8s %-30s %-18s\n", "ID", "Name", "Phone");
-    printf("--------------------------------------------------------\n");
-    for (int i = 0; i < memberCount; i++) {
-        printf("%-8d %-30.30s %-18.18s\n",
-               members[i].id,
-               members[i].name,
-               members[i].phone);
-    }
-    if (memberCount == 0) {
-        printf("No members found.\n");
-    }
-}
-
-static void searchMember(void) {
-    int id = readInt("Enter Member ID to search: ");
-    int index = findMemberIndex(id);
-
-    if (index == -1) {
-        printf("Member not found.\n");
-        return;
-    }
-
-    printf("Member ID : %d\n", members[index].id);
-    printf("Name      : %s\n", members[index].name);
-    printf("Phone     : %s\n", members[index].phone);
-}
-
-static void updateMember(void) {
-    int id = readInt("Enter Member ID to update: ");
-    int index = findMemberIndex(id);
-
-    if (index == -1) {
-        printf("Member not found.\n");
-        return;
-    }
-
-    readLine("New Name: ", members[index].name, sizeof(members[index].name));
-    readLine("New Phone Number: ", members[index].phone, sizeof(members[index].phone));
-    saveMembers();
-    printf("Member updated successfully.\n");
-}
-
-static void deleteMember(void) {
-    int id = readInt("Enter Member ID to delete: ");
-    int index = findMemberIndex(id);
-
-    if (index == -1) {
-        printf("Member not found.\n");
-        return;
-    }
-
-    for (int i = 0; i < issueCount; i++) {
-        if (issues[i].memberId == id && issues[i].status == 0) {
-            printf("Cannot delete member with active issued books.\n");
-            return;
-        }
-    }
-
-    for (int i = index; i < memberCount - 1; i++) {
-        members[i] = members[i + 1];
-    }
-    memberCount--;
-    saveMembers();
-    printf("Member deleted successfully.\n");
-}
-
-static void issueBook(void) {
-    int bookId = readInt("Enter Book ID to issue: ");
-    int memberId = readInt("Enter Member ID: ");
-    int bookIndex = findBookIndex(bookId);
-    int memberIndex = findMemberIndex(memberId);
-    IssueRecord issue;
-
-    if (bookIndex == -1) {
-        printf("Book not found.\n");
-        return;
-    }
-    if (memberIndex == -1) {
-        printf("Member not found.\n");
-        return;
-    }
-    if (!books[bookIndex].available) {
-        printf("This book is already issued.\n");
-        return;
-    }
-    if (issueCount >= MAX_ISSUES) {
-        printf("Issue register is full.\n");
-        return;
-    }
-
-    issue.issueId = nextIssueId();
-    issue.bookId = bookId;
-    issue.memberId = memberId;
-    issue.status = 0; 
-
-    books[bookIndex].available = 0;
-    issues[issueCount++] = issue;
-    saveAll();
-
-    printf("Book issued successfully.\n");
-    printf("Status     : Issued\n");
-}
-
-static void returnBook(void) {
-    int bookId = readInt("Enter Book ID to return: ");
-    int issueIndex = findIssueIndexByBook(bookId);
-
-    if (issueIndex == -1) {
-        printf("No active issue found for this book.\n");
-        return;
-    }
-    issues[issueIndex].status = 1; 
-    {
-        int bookIndex = findBookIndex(bookId);
-        if (bookIndex != -1) {
-            books[bookIndex].available = 1;
-        }
-    }
-
-    saveAll();
-    printf("Book returned successfully.\n");
-    printf("Status     : Returned\n");
-}
-
-static void listIssues(void) {
-    printf("\n%-8s %-8s %-8s %-10s\n", "IssueID", "BookID", "MemberID", "Status");
-    printf("------------------------------------------------\n");
-    for (int i = 0; i < issueCount; i++) {
-        printf("%-8d %-8d %-8d %-10s\n",
-               issues[i].issueId,
-               issues[i].bookId,
-               issues[i].memberId,
-               issues[i].status == 0 ? "Issued" : "Returned");
-    }
-    if (issueCount == 0) {
-        printf("No issue records found.\n");
-    }
-}
-
-static void manageBooksMenu(void) {
-    int choice;
-
-    do {
-        printf("\nBook Management\n");
-        printf("1. Add Book\n");
-        printf("2. List Books\n");
-        printf("3. Search Book\n");
-        printf("4. Update Book\n");
-        printf("5. Delete Book\n");
-        printf("0. Back\n");
-        choice = readInt("Choose an option: ");
-
-        switch (choice) {
-            case 1: addBook(); break;
-            case 2: listBooks(); break;
-            case 3: searchBook(); break;
-            case 4: updateBook(); break;
-            case 5: deleteBook(); break;
-            case 0: break;
-            default: printf("Invalid choice.\n"); break;
-        }
-    } while (choice != 0);
-}
-
-static void manageMembersMenu(void) {
-    int choice;
-
-    do {
-        printf("\nMember Management\n");
-        printf("1. Add Member\n");
-        printf("2. List Members\n");
-        printf("3. Search Member\n");
-        printf("4. Update Member\n");
-        printf("5. Delete Member\n");
-        printf("0. Back\n");
-        choice = readInt("Choose an option: ");
-
-        switch (choice) {
-            case 1: addMember(); break;
-            case 2: listMembers(); break;
-            case 3: searchMember(); break;
-            case 4: updateMember(); break;
-            case 5: deleteMember(); break;
-            case 0: break;
-            default: printf("Invalid choice.\n"); break;
-        }
-    } while (choice != 0);
-}
-
-static void issueReturnMenu(void) {
-    int choice;
-
-    do {
-        printf("\nIssue & Return\n");
-        printf("1. Issue Book\n");
-        printf("2. Return Book\n");
-        printf("3. View Issue Records\n");
-        printf("0. Back\n");
-        choice = readInt("Choose an option: ");
-
-        switch (choice) {
-            case 1: issueBook(); break;
-            case 2: returnBook(); break;
-            case 3: listIssues(); break;
-            case 0: break;
-            default: printf("Invalid choice.\n"); break;
-        }
-    } while (choice != 0);
-}
-
-static int authenticate(void) {
-    char username[64];
-    char password[64];
-
-    printf("Library Management System Login\n");
-    readLine("Username: ", username, sizeof(username));
-    readLine("Password: ", password, sizeof(password));
-
-    if (strcmp(username, "admin") == 0 && strcmp(password, "admin123") == 0) {
-        return 1;
-    }
-
-    printf("Invalid credentials.\n");
-    return 0;
-}
-
-int main(void) {
-    int choice;
-    loadBooks();
-    loadMembers();
-    loadIssues();
-    
-    if (!authenticate()) {
-        return 0;
-    }
-
-    do {
-        printf("\nMain Menu\n");
-        printf("1. Book Management\n");
-        printf("2. Member Management\n");
-        printf("3. Issue & Return\n");
-        printf("4. Reports & Statistics\n");
-        printf("0. Exit\n");
-        choice = readInt("Choose an option: ");
-
-        switch (choice) {
-            case 1: manageBooksMenu(); break;
-            case 2: manageMembersMenu(); break;
-            case 3: issueReturnMenu(); break;
-            case 4: showReports(); break;
-            case 0:
-                saveAll();
-                printf("Goodbye.\n");
-                break;
-            default:
-                printf("Invalid choice.\n");
-                break;
-        }
-    } while (choice != 0);
-
     return 0;
 }

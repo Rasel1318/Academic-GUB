@@ -38,37 +38,26 @@ ll mod_div(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (mod_mul(a, mminv
 
 void solve(){
     ll n;
-    cin>>n;
+    cin >> n;
 
-    vl a(n);
-    for(auto &i:a) cin>>i;
+    vl a(n), b;
+    for(auto &i:a) {cin>>i; b.pb(i);}
 
-    vl pre(n+1, 0), suf(n+1, 0);
-    pre[1] = 1; suf[n-1] = 1;
+    ll total = 0;
+    reverse(all(b));
 
-    for(int i = 1; i<n-1; i++){
-        ll x = 0;
-        if(a[i+1]-a[i]<a[i]-a[i-1]) x = 1;
-        else x = a[i+1]-a[i];
-
-        pre[i+1] = pre[i]+x;
+    vl preM(n, INT_MAX);
+    preM[0] = b[0];
+    for(int i = 1; i<n; i++){
+        preM[i] = min(b[i], preM[i-1]);
+    }
+    for(int i = n-1; i>=0; i--){
+        total += b[i]-preM[i];
     }
 
-    for(auto i:pre) cout<<i<<" "; cout<<endl;
+    
 
-    int q;
-    cin>>q;
-    while(q--){
-        int x, y;
-        cin>>x>>y;
-        if(x<y){
-            cout<<pre[y-1]-pre[x-1]<<endl;
-        }else {
-            cout<<-1<<endl;
-        }
-
-    }
-}   
+}
 
 int32_t main(){
     fastio();
@@ -83,3 +72,4 @@ int32_t main(){
     }
     return 0;
 }
+

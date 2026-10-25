@@ -1,75 +1,125 @@
-#include <bits/stdc++.h>
-
-using namespace std;
-using ll = long long int;
-using lld = long double;
-using pii = pair<int,int>;
-using vi = vector<int>;
-using vl = vector<ll>;
-using vii = vector<pii>;
-
-#define fastio() ios_base::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL)
-#define mod 1000000007
-#define INF 1e18
-#define endl "\n"
-#define pb push_back
-#define ppb pop_back
-#define mp make_pair
-#define rep(i, j, n) for(int i=(j);i<(n);++i)
-#define ff first
-#define ss second
-#define PI 3.141592653589793238462
-#define set_bits __builtin_popcountll
-#define all(x) (x).begin(), (x).end()
-#define sz(x) ((int)(x).size())
-#define no cout<<"NO\n"
-#define yes cout<<"YES\n"
+#include <stdio.h>
+#include <stdlib.h>
 
 
-/*---------------------------------------------------------------------------------------------------------------------------*/
-ll gcd(ll a, ll b) {if (b > a) {return gcd(b, a);} if (b == 0) {return a;} return gcd(b, a % b);}
-ll expo(ll a, ll b, ll m=mod) {ll res = 1; while(b > 0) {if(b&1) res = (res*a)%m; a = (a*a)%m; b = b>>1;} return res;}
-ll mminvprime(ll a, ll b) {return expo(a, b - 2, b);}
-ll mod_add(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a + b) % m) + m) % m;}
-ll mod_mul(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a * b) % m) + m) % m;}
-ll mod_sub(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (((a - b) % m) + m) % m;}
-ll mod_div(ll a, ll b, ll m=mod) {a = a % m; b = b % m; return (mod_mul(a, mminvprime(b, m), m) + m) % m;}  //only for prime m
-/*---------------------------------------------------------------------------------------------------------------------------*/
+typedef struct Node{
+	int val;
+	struct Node* next;
+}Node;
 
-void solve(){
-    ll n;
-    cin >> n;
-
-    vl a(n), b;
-    for(auto &i:a) {cin>>i; b.pb(i);}
-
-    ll total = 0;
-    reverse(all(b));
-
-    vl preM(n, INT_MAX);
-    preM[0] = b[0];
-    for(int i = 1; i<n; i++){
-        preM[i] = min(b[i], preM[i-1]);
-    }
-    for(int i = n-1; i>=0; i--){
-        total += b[i]-preM[i];
-    }
-
-    
-
+int n = 0;
+Node* create(int v){
+	Node* t = (Node*)malloc(sizeof(Node));
+	t->val = v;
+	return t;
 }
 
-int32_t main(){
-    fastio();
-    // freopen("txt.in", "r", stdin);
-    // freopen("txt.out", "w", stdout);
-    // cout<<fixed<<std::setprecision(10);
-    
-    int _ = 1;
-    cin >> _;
-    while(_--){
-        solve();
-    }
+Node* insertAtBegining(Node* head, int data){
+	Node* t = create(data);
+	if(head==NULL) { n++; return t;}
+	else{
+		t->next = head;
+		n++;
+		return t;
+	}
+}
+
+void insertAtEnd(Node* head, int data){
+	Node* t = create(data);
+	Node *root = head;
+	while(root->next!=NULL) 
+		root = root->next;
+	root->next = t;
+	n++;
+}
+
+void insertAtPosition(Node* head, int p, int data){
+	if(p==1){
+		insertAtBegining(head, data);
+		return;
+	}else if(p>=n){
+		// printf("dfjl %d", n);
+		insertAtEnd(head, data);
+		return;
+	}
+	int pos = 1;
+	Node* t = create(data);
+	Node* root = head;
+
+	while(pos+1!=p){
+		root = root->next;
+		pos++;
+	}
+	// printf("\n%d\n", pos);
+	Node* last = root->next;
+	root->next = t;
+	t->next = last;
+	n++;
+}
+Node* deleteAtBegining(Node* head){
+	Node* curr = head->next;
+	n--;
+	free(head);
+	return curr;
+}
+void deleteAtEnd(Node* head){
+	Node* t = head;
+	while(t->next->next!=NULL){
+		t = t->next;
+	}
+	t->next = NULL;
+	n--;
+}
+void deleteAtPosition(Node* head, int p){
+	if(p==1){
+		deleteAtBegining(head);
+		return;
+	}else if(p>=n){
+		deleteAtEnd(head);
+		return;
+	}
+	int pos = 1;
+	Node* root = head;
+
+	while(pos+1!=p){
+		root = root->next;
+		pos++;
+	}
+	Node* curr = root->next;
+	root->next = root->next->next;
+	free(curr);
+	n--;
+}
+
+
+
+void pr(Node* head){
+	while(head!=NULL){
+		printf("%d ", head->val);
+		head = head->next;
+	}printf("\n");
+}
+
+int main(){
+	Node* root = NULL;
+
+	root = insertAtBegining(root, 5);
+	root = insertAtBegining(root, 10);
+	root = insertAtBegining(root, 15);
+	// printf("\n%d\n", n);
+
+	insertAtEnd(root, 4);
+	insertAtEnd(root, 2);
+	insertAtEnd(root, 1);
+	// printf("\n%d\n", n);
+
+	insertAtPosition(root, 3, 34);
+	insertAtPosition(root, 3, 344);
+	insertAtPosition(root, 7, 234);
+
+	deleteAtPosition(root, 3);
+	deleteAtPosition(root, 6);
+
+	pr(root);
     return 0;
 }
-
